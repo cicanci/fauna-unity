@@ -1,0 +1,21 @@
+{
+  "name": "com.cicanci.faunadb-unity",
+  "version": "2.10.0",
+  "displayName": "Fauna for Unity",
+  "description": "Fauna C# library for Unity",
+  "unity": "2018.4",
+  "keyworks": [
+    "library",
+    "fauna",
+    "database"
+  ],
+  "author": {
+    "name": "Bruno Cicanci",
+    "email": "bruno@cicanci.com",
+    "url": "https://cicanci.com"
+  },
+  "type": "library",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "2.0.0"
+  }
+}
