@@ -1,6 +1,6 @@
 {
-  "name": "@cicanci/com.cicanci.fauna-unity",
-  "version": "2.10.0",
+  "name": "com.cicanci.fauna-unity",
+  "version": "2.10.1",
   "displayName": "Fauna for Unity",
   "description": "This is an Unity package for the FaunaDB C# Driver. No custom changes, just a nice package to make it easier to integrate FaunaDB into an Unity project.",
   "unity": "2018.4",
@@ -20,6 +20,6 @@
     "com.unity.nuget.newtonsoft-json": "2.0.0"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/@cicanci"
   }
 }
