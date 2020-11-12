@@ -1,6 +1,6 @@
 # Fauna for Unity
 
-This is an Unity package for the [FaunaDB C# Driver](https://github.com/fauna/faunadb-csharp) - no custom changes, just a nice package to make it easier to integrate FaunaDB into an Unity project.
+This is an Unity package for the [FaunaDB C# Driver](https://github.com/fauna/faunadb-csharp). No custom changes, just a nice package to make it easier to integrate FaunaDB into an Unity project.
 
 ## Installation
 

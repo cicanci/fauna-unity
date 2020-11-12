@@ -2,7 +2,7 @@
   "name": "com.cicanci.faunadb-unity",
   "version": "2.10.0",
   "displayName": "Fauna for Unity",
-  "description": "Fauna C# library for Unity",
+  "description": "This is an Unity package for the FaunaDB C# Driver. No custom changes, just a nice package to make it easier to integrate FaunaDB into an Unity project.",
   "unity": "2018.4",
   "keyworks": [
     "library",
