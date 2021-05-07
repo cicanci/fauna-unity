@@ -38,12 +38,38 @@ If you're using macOS or Linux you may need to override `FrameworkPathOverride`:
 FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/4.5-api dotnet test FaunaDB.Client.Test/ --framework net45
 ```
 
+specific tests:
+
+```bash
+FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/4.5-api dotnet test FaunaDB.Client.Test/ --framework net45 --filter Name~EncoderTest
+```
+
+If you're using .net core (which is cross-platform for Windows, Mac or Linux), use the following examples for running tests:
+```bash
+# runs all the tests for all target frameworks from csproj file
+dotnet test FaunaDB.Client.Test
+
+# runs tests for a specific target framework
+dotnet test FaunaDB.Client.Test --framework net45
+dotnet test FaunaDB.Client.Test --framework netcoreapp3.1
+dotnet test FaunaDB.Client.Test --framework net5.0
+
+# runs all the tests in a specified test class (format: namespace.class)
+dotnet test FaunaDB.Client.Test --filter FullyQualifiedName~Test.EnvironmentHeaderTest --framework netcoreapp3.1
+
+# runs a single test
+dotnet test FaunaDB.Client.Test --filter Name=TestNetlifyEnvironment --framework netcoreapp3.1
+
+# runs all the tests starting with TestUnknownEnvironment
+dotnet test FaunaDB.Client.Test --filter FullyQualifiedName~Test.EnvironmentHeaderTest.TestUnknownEnvironment --framework netcoreapp3.1
+```
+
 ## Referencing FaunaDB Assembly
 
 First install the Nuget package by adding the package reference to your MSBuild project:
 
 ```xml
-<PackageReference Include="FaunaDB.Client" Version="2.10.0" />
+<PackageReference Include="FaunaDB.Client" Version="4.0.0-preview" />
 ```
 
 or by using your IDE and searching for `FaunaDB.Client`.
@@ -101,10 +127,37 @@ This small example shows how to use pretty much every aspect of the library.
 #### How to instantiate a FaunaDB `FaunaClient`
 
 ```csharp
-var client = new FaunaClient(endpoint: ENDPOINT, secret: SECRET);
+var client = new FaunaClient(endpoint: ENDPOINT, secret: SECRET, httpClient: HTTP_CLIENT, timeout: TIMEOUT);
 ```
 
 Except `secret` all other arguments are optional.
+
+You can also pass a custom HttpClient when creating a new FaunaClient:
+
+```csharp
+// using System.Net.Http;
+var http = new HttpClient();
+
+// The default request headers can be any string values, but should be specific to your application.
+http.DefaultRequestHeaders.Add("X-Custom-Header", "42");
+
+http.Timeout = TimeSpan.FromSeconds(15);
+
+var client = new FaunaClient("secret", "http://localhost:9090/", httpClient: http);
+```
+
+#### HTTP 2.0 support
+Starting from version 4.0.0 of this driver (faunadb-csharp), HTTP/2 support is enabled by default for .NET standards 2.1 and above.
+This means that if you use .NET core 3.1 and above (which support that standard), you'll be sending requests to Fauna on HTTP/2. 
+.NET standards lower than 2.1 and .NET frameworks 4.5-4.8 have HTTP/1.1 enabled as the default protocol version, since they lack of support for HTTP/2.
+We've also added an optional parameter if you want to specify the version of the protocol directly:
+```csharp
+var adminClient = new FaunaClient(
+    endpoint: endpoint,
+    secret: secret,
+    httpVersion: HttpVersion.Version11
+);
+```
 
 #### How to execute a query
 
@@ -112,7 +165,13 @@ Except `secret` all other arguments are optional.
 Value result = await client.Query(Paginate(Match(Index("spells"))));
 ```
 
-`Query` methods receives an `Expr` object. `Expr` objects can be composed with others `Expr` to create complex query objects. `FaunaDB.Query.Language` is a helper class where you can find all available expressions in the library.
+`Query` methods receives an `Expr` object. `Expr` objects can be composed with others `Expr` to create complex query objects. `FaunaDB.Query.Language` is a helper class where you can find all available expressions in the library. 
+
+You can also pass a `TimeSpan queryTimeout` argument to that specific query as well:
+
+```csharp
+Value result = await client.Query(Paginate(Match(Index("spells"))), TimeSpan.FromSeconds(42));
+```
 
 #### How to access objects fields and convert to primitive values
 
@@ -173,7 +232,7 @@ Product product = new Product("Smartphone", 649.90);
 
 await client.Query(
     Create(
-        Ref("classes/product"),
+        Collection("product"),
         Obj("data", Encoder.Encode(product))
     )
 );
@@ -182,17 +241,26 @@ await client.Query(
 To convert from a `Value` type back to the `Product` type, you can use a `Decoder`:
 
 ```csharp
-Value value = await client.Query(Get(Ref(Class("product"), "123456789")));
+Value value = await client.Query(Get(Ref(Collection("product"), "123456789")));
 
-Product product = Decoder.Decode<Product>(value);
+Product product = Decoder.Decode<Product>(value.At("data"));
 ```
 
 or via the `To<T>()` helper method:
 
 ```csharp
-Value value = await client.Query(Get(Ref(Class("product"), "123456789")));
+Value value = await client.Query(Get(Ref(Collection("product"), "123456789")));
 
-IResult<Product> product = value.To<Product>();
+IResult<Product> product = value.At("data").To<Product>();
+product.Match(
+    Success: p => Console.WriteLine("Product loaded: {0}", p.Description),
+    Failure: reason => Console.WriteLine($"Something went wrong: {reason}")
+);
+
+// or even:
+
+Product productLoaded = value.At("data").To<Product>().Value;
+Console.WriteLine("Product loaded: {0}", prod.Description);
 ```
 
 Note that in this case the return type is `IResult<T>`.
@@ -209,9 +277,102 @@ There are three attributes that can be used to change the behavior of the `Encod
 - Primitive arrays, generic collections such as `List<T>`, and their respective interfaces such as `IList<T>`.
 - Dictionaries with string keys, such as `Dictionary<string, T>` and its respective interface `IDictionary<string, T>`.
 
+### Document streaming
+
+Fauna supports document streaming, where changes to a streamed document are pushed to all clients subscribing to that document.
+
+The streaming API is built using the Observer pattern which enables a subscriber to register with and receive notifications from a provider.  
+Provider is implemented within `StreamingEventHandler` class, and subscriber within `StreamingEventMonitor` class.
+
+The following example assumes that you have already created a `FaunaClient`.
+
+In the example below, we are capturing the 4 first messages by manually binding a subscriber.
+
+```csharp
+// docRef is a reference to the document for which we want to stream updates.
+// You can acquire a document reference with a query like the following, but it
+// needs to work with the documents that you have.
+// var docRef = Get(Ref(Collection("scoreboards"), "123"));
+
+// create a data provider
+var provider = await adminClient.Stream(docRef);
+
+// we use this object to signalize a completion of
+// asynchronous operation for the current example
+var done = new TaskCompletionSource<object>();
+
+// a collection for storage of incoming events from the provider
+List<Value> events = new List<Value>();
+
+// creating a subscriber
+// it takes 3 lambdas that describe the following:
+// - next event processing
+// - error processing
+// - completion processing
+var monitor = new StreamingEventMonitor(
+    value =>
+    {
+        events.Add(value);
+        if (events.Count == 4)
+        {
+            provider.Complete();
+        }
+        else
+        {
+            provider.RequestData();
+        }
+    },
+    ex => { done.SetException(ex); },
+    () => { done.SetResult(null); }
+);
+
+// subscribe to data provider
+monitor.Subscribe(provider);
+
+// blocking until we receive all the events
+await done.Task;
+
+// clear the subscription
+monitor.Unsubscribe();
+```
+
+You can also extend a base class instead of passing lambdas:
+```csharp
+private class MyStreamingMonitor : StreamingEventMonitor
+{
+    // optionally override OnNext event
+    public override void OnNext(Value value)
+    {
+        // process your event
+        RequestData();
+    }
+
+    // optionally override OnError event
+    public override void OnError(Exception error)
+    {
+        // process an error
+    }
+
+    // optionally override OnCompleted event
+    public override void OnCompleted()
+    {
+        // process completion event
+    }
+}
+
+// creating a subscriber
+var monitor = new MyStreamingMonitor();
+
+// subscribe to data provider
+monitor.Subscribe(provider);
+
+// clear the subscription
+monitor.Unsubscribe();
+```
+
 ## License
 
-Copyright 2018 [Fauna, Inc.](https://fauna.com/)
+Copyright 2021 [Fauna, Inc.](https://fauna.com/)
 
 Licensed under the Mozilla Public License, Version 2.0 (the "License"); you may
 not use this software except in compliance with the License. You may obtain a

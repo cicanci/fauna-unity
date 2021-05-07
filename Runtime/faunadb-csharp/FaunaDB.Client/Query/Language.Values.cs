@@ -65,6 +65,7 @@ namespace FaunaDB.Query
                     all.Add(s);
                 return new PathSelector(all);
             }
+
         }
 
         /// <summary>
@@ -84,6 +85,15 @@ namespace FaunaDB.Query
         /// </summary>
         public static PathSelector Path(params int[] segments) =>
             new PathSelector(segments);
+
+        /// <summary>
+        /// Helper for constructing a <see cref="PathSelector"/> with the given expression.
+        /// <para>
+        /// See <see cref="PathSelector"/>
+        /// </para>
+        /// </summary>
+        public static PathSelector Path(params Expr[] expr) =>
+            new PathSelector(expr);
 
         /// <summary>
         /// Creates a null value.
@@ -174,6 +184,12 @@ namespace FaunaDB.Query
         /// </summary>
         public static Expr Obj(IReadOnlyDictionary<string, Expr> fields) =>
             UnescapedObject.With("object", new UnescapedObject(fields));
+
+        /// <summary>
+        /// Creates a new Bytes value
+        /// </summary>
+        public static Expr Bytes(params byte[] bytes) =>
+            BytesV.Of(bytes);
 
         static Expr Varargs(Expr[] values)
         {

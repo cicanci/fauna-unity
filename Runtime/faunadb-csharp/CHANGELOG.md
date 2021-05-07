@@ -1,3 +1,30 @@
+## 4.0.0-preview
+- Streaming support
+- 3rd party auth support
+- HTTP/2 support for .net standard 2.1 and above
+- Add functions: `All`, `Any`, `IsArray`, `IsBoolean`, `IsBytes`, `IsCollection`, `IsCredentials`, `IsDatabase`, `IsDate`, `IsDoc`, `IsDouble`, `IsFunction`, `IsIndex`, `IsInteger`, `IsKey`, `IsLambda`, `IsNull`, `IsNumber`, `IsObject`, `IsRef`, `IsRole`, `IsSet`, `IsString`, `IsTimestamp`, `IsToken`, `TimeAdd`, `TimeSubtract`, `TimeDiff`, `ToArray`, `ToDouble`, `ToInteger`, `ToObject`
+
+## 3.0.0
+- Deprecate `Contains` in favor of specific functions `ContainsField`, `ContainsPath`, and `ContainsValue`
+- Add `Reverse` function
+- Add new Fauna attributes annotations:`FaunaString`, `FaunaTime`, and `FaunaDate`
+- implicit `BytesV` conversion from `bytes[]`
+- Support versioned lambdas
+
+## 2.12.0
+- Add `Documents` function
+- Improve encoding from `DateTime` to `DateV` and `TimeV`
+- Improve encoding (with implicit conversion) from `Dictinary<>` to `ObjectV`
+- Add a `HttpClient` to the `FaunaClient` initilization
+- Fix the issue with `NewSessionClient` not passing endpoint/timeout
+- Add query and client `timeout`
+- Add cursor pagination objects: `Cursor`, `After`, and `Before`
+
+## 2.11.0
+- Add string functions: `StartsWith`, `EndsWith`, `ContainsStr`, `ContainsStrRegex`, and `RegexEscape`
+- Add `Now` function
+- Add math functions: `Mean`, `Sum`, and `Count`
+
 ## 2.10.0
 - Add string functions: `Format`, `FindStr`, `FindStrRegex`, `Length`, `LowerCase`, `LTrim`, `Repeat`, `ReplaceStr`, `ReplaceStrRegex`, `RTrim`, `Space`, `SubString`, `TitleCase`, `Trim` and `UpperCase`
 - Add math functions: `Abs`, `Acos`, `Asin`, `Atan`, `BitAnd`, `BitNot`, `BitOr`, `BitXor`, `Ceil`, `Cos`, `Cosh`, `Degrees`, `Exp`, `Floor`, `Hypot`, `Ln`, `Log`, `Max`, `Min`, `Pow`, `Radians`, `Round`, `Sign`, `Sin`, `Sinh`, `Sqrt`, `Tan`, `Tanh` and `Trunc`

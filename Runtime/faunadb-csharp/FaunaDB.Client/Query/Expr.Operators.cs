@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using FaunaDB.Types;
 
 using static FaunaDB.Query.Language;
@@ -29,6 +30,12 @@ namespace FaunaDB.Query
         public static implicit operator Expr(DateTimeOffset dt) =>
             Value.FromDateTimeOffset(dt);
 
+        public static implicit operator Expr(Dictionary<string, Expr> dict) =>
+            Encoder.Encode(dict);
+
+        public static implicit operator Expr(byte[] bytes) =>
+            BytesV.Of(bytes);
+
         public static implicit operator Expr(ActionType action)
         {
             switch (action)
@@ -58,6 +65,18 @@ namespace FaunaDB.Query
 
                 case TimeUnit.Second:
                     return "second";
+                
+                case TimeUnit.Minute:
+                    return "minute";
+                
+                case TimeUnit.Hour:
+                    return "hour";
+                
+                case TimeUnit.HalfDay:
+                    return "half day";
+                
+                case TimeUnit.Day:
+                    return "day";
             }
 
             throw new ArgumentException("Invalid time unit value");
@@ -162,9 +181,21 @@ namespace FaunaDB.Query
 
                 case "second":
                     return TimeUnit.Second;
+                
+                case "minute":
+                    return TimeUnit.Minute;
+                
+                case "hour":
+                    return TimeUnit.Hour;
+                
+                case "half day":
+                    return TimeUnit.HalfDay;
+                
+                case "day":
+                    return TimeUnit.Day;
             }
 
-            throw new ArgumentException("Invalid string value. Should be \"second\", \"millisecond\", \"microsecond\" or \"nanosecond\"");
+            throw new ArgumentException("Invalid string value. Should be \"day\", \"half day\", \"hour\", \"minute\", \"second\", \"millisecond\", \"microsecond\" or \"nanosecond\"");
         }
 
         public static explicit operator Normalizer(Expr normalizer)
