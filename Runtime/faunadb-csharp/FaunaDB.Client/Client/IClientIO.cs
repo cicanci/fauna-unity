@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -10,6 +11,15 @@ namespace FaunaDB.Client
     {
         IClientIO NewSessionClient(string secret);
 
-        Task<RequestResult> DoRequest(HttpMethodKind method, string path, string data, IReadOnlyDictionary<string, string> query = null);
+        Task<RequestResult> DoRequest(
+            HttpMethodKind method,
+            string path,
+            string data,
+            IReadOnlyDictionary<string, string> query = null,
+            TimeSpan? queryTimeout = null);
+
+        Task<StreamingRequestResult> DoStreamingRequest(
+            string data,
+            IReadOnlyDictionary<string, string> query = null);
     }
 }

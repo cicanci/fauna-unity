@@ -176,8 +176,27 @@ namespace FaunaDB.Query
         /// See the <see href="https://app.fauna.com/documentation/reference/queryapi#miscellaneous-functions">FaunaDB Miscellaneous Functions</see>
         /// </para>
         /// </summary>
+        [Obsolete("Contains is deprecated, please use ContainsPath instead.")]
         public static Expr Contains(Expr path, Expr @in) =>
             UnescapedObject.With("contains", path, "in", @in);
+
+        /// <summary>
+        /// Creates a new ContainsField expression.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containsfield">FaunaDB ConstainsField Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsField(Expr path, Expr @in) =>
+            UnescapedObject.With("contains_field", path, "in", @in);
+
+        /// <summary>
+        /// Creates a new ContainsValue expression.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containsvalue">FaunaDB ConstainsValue Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsValue(Expr value, Expr @in) =>
+            UnescapedObject.With("contains_value", value, "in", @in); 
 
         /// <summary>
         /// Creates a new Contains expression.
@@ -185,8 +204,27 @@ namespace FaunaDB.Query
         /// See the <see href="https://app.fauna.com/documentation/reference/queryapi#miscellaneous-functions">FaunaDB Miscellaneous Functions</see>
         /// </para>
         /// </summary>
+        [Obsolete("Contains is deprecated, please use ContainsPath instead.")]
         public static Expr Contains(PathSelector path, Expr @in) =>
             UnescapedObject.With("contains", path.Segments, "in", @in);
+
+        /// <summary>
+        /// Creates a new ContainsPath expression.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containspath">FaunaDB ConstainsPath Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsPath(PathSelector path, Expr @in) =>
+            UnescapedObject.With("contains_path", path.Segments, "in", @in);
+
+        /// <summary>
+        /// Creates a new ContainsPath expression.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containspath">FaunaDB ConstainsPath Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsPath(Expr expr, Expr @in) =>
+            UnescapedObject.With("contains_path", expr, "in", @in);
 
         /// <summary>
         /// Creates a new Select expression.
@@ -194,7 +232,7 @@ namespace FaunaDB.Query
         /// See the <see href="https://app.fauna.com/documentation/reference/queryapi#miscellaneous-functions">FaunaDB Miscellaneous Functions</see>
         /// </para>
         /// </summary>
-       public static Expr Select(Expr path, Expr @from, Expr @default = null) =>
+        public static Expr Select(Expr path, Expr @from, Expr @default = null) =>
             UnescapedObject.With("select", path, "from", @from, "default", @default);
 
         /// <summary>
@@ -838,5 +876,85 @@ namespace FaunaDB.Query
         public static Expr UpperCase(Expr expr) =>
             UnescapedObject.With("uppercase", expr);
 
+        /// <summary>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/startswith">FaunaDB StartsWith Function</see>
+        /// </summary>
+        public static Expr StartsWith(Expr value, Expr search) =>
+            UnescapedObject.With("startswith", value, "search", search);
+
+        /// <summary>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/endswith">FaunaDB EndsWith Function</see>
+        /// </summary>
+        public static Expr EndsWith(Expr value, Expr search) =>
+            UnescapedObject.With("endswith", value, "search", search);
+
+        /// <summary>
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containsstr">FaunaDB ContainsStr Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsStr(Expr value, Expr search) =>
+            UnescapedObject.With("containsstr", value, "search", search);
+
+        /// <summary>
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/containsstrregex">FaunaDB ContainsStrRegex Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr ContainsStrRegex(Expr value, Expr pattern) =>
+            UnescapedObject.With("containsstrregex", value, "pattern", pattern);
+
+        /// <summary>
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/regexescape">FaunaDB RegexEscape Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr RegexEscape(Expr value) =>
+            UnescapedObject.With("regexescape", value);
+
+
+        /// <summary>
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/documents">FaunaDB Documents Function</see>
+        /// </para>
+        /// </summary>
+        public static Expr Documents(Expr collection) =>
+            UnescapedObject.With("documents", collection);
+        
+        /// <summary>
+        /// Try to convert an object into an array of (field, value).
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/toarray">ToArray</see>
+        /// </para>
+        /// </summary>
+        public static Expr ToArray(Expr expr) =>
+            UnescapedObject.With("to_array", expr);
+        
+        /// <summary>
+        /// Try to convert an array of (field, value) into an object.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/toobject">ToObject</see>
+        /// </para>
+        /// </summary>
+        public static Expr ToObject(Expr fields) =>
+            UnescapedObject.With("to_object", fields);
+        
+        /// <summary>
+        /// Casts an expression to a double value, if possible.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/todouble">ToDouble</see>
+        /// </para>
+        /// </summary>
+        public static Expr ToDouble(Expr value) =>
+            UnescapedObject.With("to_double", value);
+        
+        /// <summary>
+        /// Casts an expression to an integer value, if possible.
+        /// <para>
+        /// See the <see href="https://docs.fauna.com/fauna/current/api/fql/functions/tointeger">ToInteger</see>
+        /// </para>
+        /// </summary>
+        public static Expr ToInteger(Expr value) =>
+            UnescapedObject.With("to_integer", value);
     }
 }

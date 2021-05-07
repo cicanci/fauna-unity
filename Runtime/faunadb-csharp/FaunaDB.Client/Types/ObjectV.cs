@@ -42,11 +42,6 @@ namespace FaunaDB.Types
             Value = values;
         }
 
-        public object Get<T>(T v)
-        {
-            throw new NotImplementedException();
-        }
-
         #endregion
 
         /// <exception cref="KeyNotFoundException"/>

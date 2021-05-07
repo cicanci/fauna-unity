@@ -49,12 +49,74 @@ namespace FaunaDB.Types
         /// The default value used for a missing property when decoding an object.
         /// </summary>
         public object DefaultValue { get; set; }
-
+        
         public FaunaFieldAttribute(string name)
         {
             Name = name;
         }
     }
+
+    /// <summary>
+    /// Instruct the encoder that this <see cref="DateTime"/> property should always be
+    /// converted to <see cref="Types.DateV"/>
+    /// </summary>
+    /// <example>
+    /// class User
+    /// {
+    ///     [FaunaDate]
+    ///     public DateTime Birthday { get; set; }
+    /// }
+    ///
+    /// var user = new User { Birthday = DateTime.Now };
+    ///
+    /// var encoded = Encoder.Encode(user);
+    /// </example>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter)]
+    public class FaunaDate : Attribute
+    {}
+
+    /// <summary>
+    /// Instruct the encoder that this <see cref="DateTime"/> property should always be
+    /// converted to <see cref="Types.TimeV"/>
+    /// </summary>
+    /// <example>
+    /// class User
+    /// {
+    ///     [FaunaTime]
+    ///     public DateTime TimeSignedUp { get; set; }
+    /// }
+    ///
+    /// var user = new User { TimeSignedUp = DateTime.Now };
+    ///
+    /// var encoded = Encoder.Encode(user);
+    /// </example>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter)]
+    public class FaunaTime : Attribute
+    { }
+
+    /// <summary>
+    /// Instruct the encoder that this object should be treated as a string when
+    /// stored in Fauna. The Encoder will call the object or primative type's
+    /// .ToString() method. The Decoder will attempt to create an object with the
+    /// constructor with a single string parameter. If it does not have that
+    /// constructor the Decoder will fail. For primatives the Decoder will attempt
+    /// to use standard system conversions to convert the string back to the
+    /// primative type.
+    /// </summary>
+    /// <example>
+    /// class Website
+    /// {
+    ///     [FaunaString]
+    ///     public Uri MyLink { get; set; }
+    /// }
+    ///
+    /// var web = new Website { MyLink = new Uri("http://fauanadb.com") };
+    ///
+    /// var encodedWebsite = Encoder.Encode(web);
+    /// </example>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter)]
+    public class FaunaString : Attribute
+    { }
 
     /// <summary>
     /// Instruct the encoder to not encode the specified member.
