@@ -31,14 +31,12 @@ namespace FaunaDB.Client
         /// <param name="secret">Auth token for the FaunaDB server.</param>
         /// <param name="endpoint">URL for the FaunaDB server. Defaults to "https://db.fauna.com:443"</param>
         /// <param name="timeout">Timeout for I/O operations. Defaults to 1 minute.</param>
-        /// <param name="httpVersion">Version of http. Default value is HttpVersion.Version11, is you use .net core 3.0 and above you can enable http/2 support by passing HttpVersion.Version20</param>
         public FaunaClient(
             string secret,
             string endpoint = "https://db.fauna.com:443",
             TimeSpan? timeout = null,
-            HttpClient httpClient = null,
-            Version httpVersion = null)
-            : this(CreateClient(secret, endpoint, timeout, httpClient, httpVersion))
+            HttpClient httpClient = null)
+            : this(CreateClient(secret, endpoint, timeout, httpClient))
         { }
 
         /// <summary>
@@ -148,19 +146,6 @@ namespace FaunaDB.Client
             return responseContent["resource"];
         }
 
-        public async Task<StreamingEventHandler> Stream(Expr data = null, IReadOnlyList<EventField> fields = null)
-        {
-            var dataString = data == null ?  null : JsonConvert.SerializeObject(data, Formatting.None);
-            var queryParams = fields != null
-                ? ImmutableDictionary.Of("fields", String.Join(",", fields.Select(v => v.Value)))
-                : null;
-            var responseHttp = await clientIO.DoStreamingRequest(dataString, queryParams);
-            
-            RaiseForStatusCode(responseHttp);
-
-            return new StreamingEventHandler(responseHttp.ResponseContent);
-        }
-
         internal struct ErrorsWrapper
         {
             public IReadOnlyList<QueryError> Errors;
@@ -195,38 +180,8 @@ namespace FaunaDB.Client
                     throw new UnknowException(response);
             }
         }
-        
-        internal static void RaiseForStatusCode(StreamingRequestResult resultRequest)
-        {
-            var statusCode = resultRequest.StatusCode;
 
-            if (statusCode >= 200 && statusCode < 300)
-                return;
-
-            var wrapper = JsonConvert.DeserializeObject<ErrorsWrapper>(resultRequest.ErrorContent);
-
-            var response = new QueryErrorResponse(statusCode, wrapper.Errors);
-
-            switch (statusCode)
-            {
-                case 400:
-                    throw new BadRequest(response);
-                case 401:
-                    throw new Unauthorized(response);
-                case 403:
-                    throw new PermissionDenied(response);
-                case 404:
-                    throw new NotFound(response);
-                case 500:
-                    throw new InternalError(response);
-                case 503:
-                    throw new UnavailableError(response);
-                default:
-                    throw new UnknowException(response);
-            }
-        }
-
-        public static ObjectV FromJson(string json)
+        static ObjectV FromJson(string json)
         {
             try
             {
@@ -243,15 +198,13 @@ namespace FaunaDB.Client
             string secret,
             string endpoint,
             TimeSpan? timeout = null,
-            HttpClient httpClient = null,
-            Version httpVersion = null)
+            HttpClient httpClient = null)
         {
             return new DefaultClientIO(
                 secret: secret,
                 endpoint: new Uri(endpoint),
                 timeout: timeout,
-                httpClient: httpClient,
-                httpVersion: httpVersion
+                httpClient: httpClient
             );
         }
     }
