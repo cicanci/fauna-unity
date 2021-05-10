@@ -17,9 +17,5 @@ namespace FaunaDB.Client
             string data,
             IReadOnlyDictionary<string, string> query = null,
             TimeSpan? queryTimeout = null);
-
-        Task<StreamingRequestResult> DoStreamingRequest(
-            string data,
-            IReadOnlyDictionary<string, string> query = null);
     }
 }

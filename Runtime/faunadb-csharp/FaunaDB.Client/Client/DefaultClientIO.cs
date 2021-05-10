@@ -6,8 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,37 +25,25 @@ namespace FaunaDB.Client
         readonly AuthenticationHeaderValue authHeader;
 
         private LastSeen lastSeen;
-        private Version httpVersion;
 
-        public const string StreamingPath = "stream";
-        public const HttpMethodKind StreamingHttpMethod = HttpMethodKind.Post;
-
-        internal DefaultClientIO(HttpClient client, AuthenticationHeaderValue authHeader, LastSeen lastSeen, Uri endpoint, TimeSpan? timeout, Version httpVersion)
+        internal DefaultClientIO(HttpClient client, AuthenticationHeaderValue authHeader, LastSeen lastSeen, Uri endpoint, TimeSpan? timeout)
         {
             this.client = client;
             this.authHeader = authHeader;
             this.lastSeen = lastSeen;
             this.endpoint = endpoint;
             this.clientTimeout = timeout;
-#if NETSTANDARD2_1
-            this.httpVersion = httpVersion == null ? new Version(2, 0) : httpVersion;
-#else
-            this.httpVersion = httpVersion == null ? new Version(1, 1) : httpVersion;
-#endif
         }
 
-        public DefaultClientIO(string secret, Uri endpoint, TimeSpan? timeout = null, HttpClient httpClient = null, Version httpVersion = null)
-            : this(httpClient ?? CreateClient(), AuthHeader(secret), new LastSeen(), endpoint, timeout, httpVersion)
+        public DefaultClientIO(string secret, Uri endpoint, TimeSpan? timeout = null, HttpClient httpClient = null)
+            : this(httpClient ?? CreateClient(), AuthHeader(secret), new LastSeen(), endpoint, timeout)
         { }
 
         public IClientIO NewSessionClient(string secret) =>
-            new DefaultClientIO(client, AuthHeader(secret), lastSeen, endpoint, clientTimeout, httpVersion);
+            new DefaultClientIO(client, AuthHeader(secret), lastSeen, endpoint, clientTimeout);
 
         public Task<RequestResult> DoRequest(HttpMethodKind method, string path, string data, IReadOnlyDictionary<string, string> query = null, TimeSpan? queryTimeout = null) =>
             DoRequestAsync(method, path, data, query, queryTimeout);
-
-        public Task<StreamingRequestResult> DoStreamingRequest(string data, IReadOnlyDictionary<string, string> query = null) =>
-            DoStreamingRequestAsync(data, query);
 
         async Task<RequestResult> DoRequestAsync(HttpMethodKind method, string path, string data, IReadOnlyDictionary<string, string> query = null, TimeSpan? queryTimeout = null)
         {
@@ -73,9 +59,8 @@ namespace FaunaDB.Client
             message.Headers.Authorization = authHeader;
             message.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
             message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            message.Headers.Add("X-FaunaDB-API-Version", "4");
-            message.Headers.Add("X-Driver-Env", RuntimeEnvironmentHeader.Construct(EnvironmentEditor.Create()));
-            message.Version = httpVersion;
+            message.Headers.Add("X-FaunaDB-API-Version", "3");
+            message.Headers.Add("X-Fauna-Driver", "csharp");
 
             var last = lastSeen.Txn;
             if (last.HasValue)
@@ -111,53 +96,6 @@ namespace FaunaDB.Client
             return new RequestResult(method, path, query, data, response, (int)httpResponse.StatusCode, ToDictionary(httpResponse.Headers), startTime, endTime);
         }
 
-        async Task<StreamingRequestResult> DoStreamingRequestAsync(string data, IReadOnlyDictionary<string, string> query = null)
-        {
-            var path = StreamingPath;
-            var dataString = data == null ?  null : new StringContent(data, Encoding.UTF8, "application/json");
-            var queryString = query == null ? null : QueryString(query);
-            if (queryString != null)
-                path = $"{path}?{queryString}";
-            
-            var startTime = DateTime.UtcNow;
-
-            var message = new HttpRequestMessage(new HttpMethod(StreamingHttpMethod.Name()), $"{endpoint}{path}");
-            message.Content = dataString;
-            message.Headers.Authorization = authHeader;
-            message.Headers.Add("X-FaunaDB-API-Version", "4");
-            message.Headers.Add("X-Driver-Env", RuntimeEnvironmentHeader.Construct(EnvironmentEditor.Create()));
-            message.Version = httpVersion;
-            message.SetTimeout(Timeout.InfiniteTimeSpan);
-            
-            var last = lastSeen.Txn;
-            if (last.HasValue)
-            {
-                message.Headers.Add("X-Last-Seen-Txn", last.Value.ToString());
-            }
-
-            var httpResponse = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, CancellationToken.None).ConfigureAwait(false);
-            
-            Stream response = await httpResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-
-            var endTime = DateTime.UtcNow;
-
-            if (httpResponse.Headers.Contains("X-Txn-Time")) {
-                // there shouldn't ever be more than one...
-                var time = httpResponse.Headers.GetValues("X-Txn-Time").First();
-
-                lastSeen.SetTxn(Convert.ToInt64(time));
-            }
-
-            var errorContent = String.Empty;
-            if (!httpResponse.IsSuccessStatusCode)
-            {
-                StreamReader streamReader = new StreamReader(response);
-                errorContent = await streamReader.ReadLineAsync();
-            }
-
-            return new StreamingRequestResult(query, data, response, (int)httpResponse.StatusCode, errorContent, ToDictionary(httpResponse.Headers), startTime, endTime);
-        }
-
         static async Task<string> DecompressGZip(HttpContent content)
         {
             using (var stream = await content.ReadAsStreamAsync().ConfigureAwait(false))
@@ -174,11 +112,12 @@ namespace FaunaDB.Client
             headers.ToDictionary(k => k.Key, v => v.Value);
 
         /// <summary>
-        /// Adds a header with Bearer Auth Token.
+        /// Encodes secret string using base64.
         /// </summary>
-        static AuthenticationHeaderValue AuthHeader(string authToken)
+        static AuthenticationHeaderValue AuthHeader(string secret)
         {
-            return new AuthenticationHeaderValue("Bearer", authToken);
+            var bytes = Encoding.ASCII.GetBytes(secret);
+            return new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
         /// <summary>
